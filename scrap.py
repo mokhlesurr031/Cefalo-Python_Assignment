@@ -1,54 +1,65 @@
 from bs4 import BeautifulSoup
 import requests
 from urllib.parse import urljoin
+from datetime import datetime
 
 
-def get_movie_list_data():
+
+# Scrapping Duration
+#requests = Execution time: 0:07:41.948418
+
+
+def fetch_initial_data():
     movie_list_url = 'https://en.wikipedia.org/wiki/List_of_Academy_Award-winning_films'
     response = requests.get(movie_list_url)
     soup = BeautifulSoup(response.text, "lxml")
     selector = 'tbody tr'
     all_link_el = soup.select(selector)
 
+    start_time = datetime.now()
+
     for link_el in all_link_el:
-        try:
-            link = link_el.td.next.next['href']
-            link = urljoin('https://en.wikipedia.org', link)
-            data = link_el.text.split('\n')
+        get_movie_list_data(link_el)
 
-            movie_data_details = fetch_movie_detail(link)
+    end_time = datetime.now()
+    print("Data Parsing Done. Execution time: {}".format(end_time - start_time))
 
-            movie_lists_dict = {
-                'name': data[1],
-                'path': link,
-                'year': data[2],
-                'awards': data[3],
-                'nominations': data[4]
-            }
-            print(movie_lists_dict)
-            print(movie_data_details)
-        except:
-            pass
 
-        try:
-            link = link_el.td.next.next.next['href']
-            link = urljoin('https://en.wikipedia.org', link)
-            data = link_el.text.split('\n')
+def get_movie_list_data(link_el):
+    try:
+        link = link_el.td.next.next['href']
+        link = urljoin('https://en.wikipedia.org', link)
+        data = link_el.text.split('\n')
+        movie_lists_dict = {
+            'name': data[1],
+            'path': link,
+            'year': data[2],
+            'awards': data[3],
+            'nominations': data[4]
+        }
+        fetch_movie_detail(link)
+        print(movie_lists_dict)
+    except:
+        pass
 
-            movie_data_details = fetch_movie_detail(link)
+    try:
+        link = link_el.td.next.next.next['href']
+        link = urljoin('https://en.wikipedia.org', link)
+        data = link_el.text.split('\n')
 
-            movie_lists_dict = {
-                'name': data[1],
-                'path': link,
-                'year': data[2],
-                'awards': data[3],
-                'nominations': data[4],
-            }
-            print(movie_lists_dict)
-            print(movie_data_details)
+        movie_lists_dict = {
+            'name': data[1],
+            'path': link,
+            'year': data[2],
+            'awards': data[3],
+            'nominations': data[4],
+        }
+        fetch_movie_detail(link)
 
-        except:
-            pass
+        print(movie_lists_dict)
+
+    except:
+        pass
 
 
 def fetch_movie_detail(link):
@@ -66,7 +77,8 @@ def fetch_movie_detail(link):
             val = ''
         val = [i for i in val if i]
         details[title] = val
-    return details
+    # return details
+    print(details)
 
 
-get_movie_list_data()
+fetch_initial_data()
