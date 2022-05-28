@@ -1,13 +1,18 @@
+from concurrent.futures import ThreadPoolExecutor
+from urllib.parse import urljoin
 from bs4 import BeautifulSoup
 import requests
-from urllib.parse import urljoin
 from datetime import datetime
+from os import cpu_count
+import time
 
 
 
 # Scrapping Duration
 #requests = Execution time: 0:07:41.948418
+#thread = Execution time: 0:02:30.763098
 
+movies = []
 
 def fetch_initial_data():
     movie_list_url = 'https://en.wikipedia.org/wiki/List_of_Academy_Award-winning_films'
@@ -18,18 +23,21 @@ def fetch_initial_data():
 
     start_time = datetime.now()
 
-    for link_el in all_link_el:
-        get_movie_list_data(link_el)
+    with ThreadPoolExecutor(max_workers = cpu_count()*5) as p:
+        p.map(get_movie_list_data, all_link_el)
+
+    with ThreadPoolExecutor(max_workers = cpu_count()*4) as p:
+        p.map(fetch_movie_detail, movies)
 
     end_time = datetime.now()
-    print("Data Parsing Done. Execution time: {}".format(end_time - start_time))
-
+    print("Data Parsing Done. Execution time: {}".format(end_time-start_time))
 
 def get_movie_list_data(link_el):
     try:
         link = link_el.td.next.next['href']
         link = urljoin('https://en.wikipedia.org', link)
         data = link_el.text.split('\n')
+
         movie_lists_dict = {
             'name': data[1],
             'path': link,
@@ -37,8 +45,8 @@ def get_movie_list_data(link_el):
             'awards': data[3],
             'nominations': data[4]
         }
-        fetch_movie_detail(link)
-        print(movie_lists_dict)
+        movies.append(movie_lists_dict)
+
     except:
         pass
 
@@ -54,18 +62,15 @@ def get_movie_list_data(link_el):
             'awards': data[3],
             'nominations': data[4],
         }
-        fetch_movie_detail(link)
-
-        print(movie_lists_dict)
-
+        movies.append(movie_lists_dict)
     except:
         pass
 
-
 def fetch_movie_detail(link):
+    link = link['path']
     response = requests.get(link)
 
-    soup = BeautifulSoup(response.text, 'lxml')
+    soup = BeautifulSoup(response.text, "lxml")
     selector = '.infobox  tbody tr'
     movie_detail_data_all = soup.select(selector)
     details = {}
@@ -79,6 +84,5 @@ def fetch_movie_detail(link):
         details[title] = val
     # return details
     print(details)
-
 
 fetch_initial_data()
