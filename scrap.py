@@ -16,7 +16,8 @@ app = Flask(__name__)
 #thread = Execution time: 0:02:30.763098
 
 # Data Scrapping and write to db
-#scrap and write to db = Execution time: 0:03:38.305782
+#scrap and write to db = Execution time: 0:11:39.054897 (requests)
+#scrap and write to db = Execution time: 0:03:06.477507 (thread)
 
 
 # TinyDB Configuration
@@ -31,7 +32,6 @@ movies = []
 
 def fetch_initial_data():
     print("Please wait for a few moments......\n\n")
-
     movie_list_url = 'https://en.wikipedia.org/wiki/List_of_Academy_Award-winning_films'
     response = requests.get(movie_list_url)
     soup = BeautifulSoup(response.text, "lxml")
@@ -48,14 +48,21 @@ def fetch_initial_data():
     flag = 1
     for movie in movies_data:
         movie['id']=flag
-        movie_list.insert(movie)
-        fetch_movie_detail(movie)
-        print('Scrapping data', str(flag))
+        try:
+            movie_list.insert(movie)
+            print("List row added")
+        except:
+            print("List insert failed for {}".format(movie))
+        try:
+            movie_details.insert(fetch_movie_detail(movie))
+            print("Detail row added")
+        except:
+            print("Details insert failed for {}".format(movie))
         flag+=1
 
-    print("Movie Data from first page parsing completed\n\nPlease wait till movie details data scrapping is done.....\n\n")
+    # print("Movie Data from first page parsing completed\n\nPlease wait till movie details data scrapping is done.....\n\n")
 
-    # with ThreadPoolExecutor(max_workers = cpu_count()*4) as p:
+    # with ThreadPoolExecutor(max_workers = cpu_count()*2) as p:
     #     p.map(fetch_movie_detail, movies_data)
 
     end_time = datetime.now()
@@ -112,14 +119,12 @@ def fetch_movie_detail(link):
             val = ''
         val = [i for i in val if i]
         details[title] = val
-    # details[title] = val
-    # movie_details.insert(details)
     movie_details_dict = {
         'name': movie_name,
         'movie_id': movie_id,
         'details': details
     }
-    movie_details.insert(movie_details_dict)
+    return movie_details_dict
 
 
 def serve_data():
@@ -129,20 +134,14 @@ def serve_data():
         return json.dumps(all_movie_list)
 
     @app.route('/<movie_id>')
-    def movie_details_view(movie_id):
-        print(movie_id)
-        details = movie_details.get(movieDetails.movie_id == int(movie_id))
-        print(details)
-        return json.dumps(details)
+    def movie_detail_view(movie_id):
+        movie_detail = movie_details.search(movieDetails.movie_id == int(movie_id))
+        return json.dumps(movie_detail)
 
     app.run()
 
 
-
 arguments = sys.argv[1]
-# print(arguments)
-# arguments = 'parse'
-# arguments = 'serve'
 if arguments =='parse':
     fetch_initial_data()
 elif arguments=='serve':
