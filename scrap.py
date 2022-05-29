@@ -2,9 +2,13 @@ from concurrent.futures import ThreadPoolExecutor
 from urllib.parse import urljoin
 from bs4 import BeautifulSoup
 import requests
+import sys
 from datetime import datetime
 from os import cpu_count
 from tinydb import TinyDB, Query
+from flask import Flask
+import json
+app = Flask(__name__)
 
 
 # Scrapping Duration
@@ -12,7 +16,7 @@ from tinydb import TinyDB, Query
 #thread = Execution time: 0:02:30.763098
 
 # Data Scrapping and write to db
-#scrap and write to db = Execution time: 0:04:00.100280
+#scrap and write to db = Execution time: 0:03:38.305782
 
 
 # TinyDB Configuration
@@ -45,12 +49,14 @@ def fetch_initial_data():
     for movie in movies_data:
         movie['id']=flag
         movie_list.insert(movie)
+        fetch_movie_detail(movie)
+        print('Scrapping data', str(flag))
         flag+=1
 
     print("Movie Data from first page parsing completed\n\nPlease wait till movie details data scrapping is done.....\n\n")
 
-    with ThreadPoolExecutor(max_workers = cpu_count()*4) as p:
-        p.map(fetch_movie_detail, movies_data)
+    # with ThreadPoolExecutor(max_workers = cpu_count()*4) as p:
+    #     p.map(fetch_movie_detail, movies_data)
 
     end_time = datetime.now()
     print("Data Parsing Done. Execution time: {}".format(end_time-start_time))
@@ -91,6 +97,7 @@ def get_movie_list_data(link_el):
 
 def fetch_movie_detail(link):
     movie_id = link['id']
+    movie_name = link['name']
     link = link['path']
     response = requests.get(link)
     soup = BeautifulSoup(response.text, "lxml")
@@ -105,8 +112,40 @@ def fetch_movie_detail(link):
             val = ''
         val = [i for i in val if i]
         details[title] = val
-    details['movie_id'] = movie_id
-    movie_details.insert(details)
+    # details[title] = val
+    # movie_details.insert(details)
+    movie_details_dict = {
+        'name': movie_name,
+        'movie_id': movie_id,
+        'details': details
+    }
+    movie_details.insert(movie_details_dict)
 
 
-fetch_initial_data()
+def serve_data():
+    @app.route('/')
+    def movie_list_view():
+        all_movie_list = movie_list.all()
+        return json.dumps(all_movie_list)
+
+    @app.route('/<movie_id>')
+    def movie_details_view(movie_id):
+        print(movie_id)
+        details = movie_details.get(movieDetails.movie_id == int(movie_id))
+        print(details)
+        return json.dumps(details)
+
+    app.run()
+
+
+
+arguments = sys.argv[1]
+# print(arguments)
+# arguments = 'parse'
+# arguments = 'serve'
+if arguments =='parse':
+    fetch_initial_data()
+elif arguments=='serve':
+    serve_data()
+else:
+    print("please enter right command")
