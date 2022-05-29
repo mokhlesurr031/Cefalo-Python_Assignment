@@ -1,4 +1,4 @@
-# Cefalo
+# Cefalo - Python Assignment
 
 
 **I have completed total 3 phases. There are two python files and one requirements.txt files in the assignment. They are:**
@@ -13,7 +13,7 @@ b. requirements.txt - Necessary dependencies/libraries that I have used to compl
 ```
 
 ```sh
-I have chosen TinyDB as my database.
+I have chosen TinyDB as my database. It's a portable and light db that stores data in json file.
 ```
 
 
@@ -21,7 +21,7 @@ I have chosen TinyDB as my database.
 ## Instructions to follow:
 
 
-- Open console and configure virtual environments for installing necessary dependencies from requirements.txt.
+- Open console and create a virtual environment for installing necessary dependencies from requirements.txt.
 
 
 - For Scrapping and Storing datas in TinyDB used the command given below.
