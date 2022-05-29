@@ -131,17 +131,29 @@ def serve_data():
     @app.route('/')
     def movie_list_view():
         all_movie_list = movie_list.all()
-        return json.dumps(all_movie_list)
+        res = {"Movies List": all_movie_list}
+        result = json.dumps(res)
+        loaded_res = json.loads(result)
+        return loaded_res
 
     @app.route('/<movie_id>')
     def movie_detail_view(movie_id):
         movie_detail = movie_details.search(movieDetails.movie_id == int(movie_id))
-        return json.dumps(movie_detail)
+        res = {"Details": json.dumps(movie_detail)}
+        result = json.dumps(res)
+        loaded_res = json.loads(result)
+        return loaded_res
 
-    app.run()
+
+    if __name__=='__main__':
+        app.run()
 
 
-arguments = sys.argv[1]
+try:
+    arguments = sys.argv[1]
+except:
+    arguments = 'serve'
+
 if arguments =='parse':
     fetch_initial_data()
 elif arguments=='serve':
